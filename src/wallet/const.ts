@@ -1,0 +1,1 @@
+export const SUPPORTED_EVM_NETWORKS = ['ethereum', 'bnb', 'polygon', 'solana', 'ton'] as const;
