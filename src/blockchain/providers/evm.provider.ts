@@ -89,6 +89,12 @@ export class EvmProvider implements OnModuleInit {
     this.logger.log(`EVM Provider initialized: ${this.network} (${rpcUrl})`);
   }
 
+  isEvmNetwork(): boolean {
+    return ['ethereum', 'bnb', 'polygon'].includes(
+      this.configService.get<string>('NETWORK', 'ethereum'),
+    );
+  }
+
   private getChainId(): number {
     const map: Record<string, number> = {
       ethereum: 1,
@@ -97,11 +103,5 @@ export class EvmProvider implements OnModuleInit {
     };
 
     return map[this.network];
-  }
-
-  isEvmNetwork(): boolean {
-    return ['ethereum', 'bnb', 'polygon'].includes(
-      this.configService.get<string>('NETWORK', 'ethereum'),
-    );
   }
 }
