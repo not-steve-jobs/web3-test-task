@@ -41,7 +41,6 @@ export class WalletController {
     @Param('address') address: string,
     @Query() query: GetTransactionsDto,
   ) {
-    console.log('controller', 111)
     return this.walletService.getTransactions(address, Number(query.limit) || 10);
   }
 

@@ -76,8 +76,27 @@ export class EvmProvider implements OnModuleInit {
       this.configService.get<string>(`${this.network.toUpperCase()}_RPC_URL`) ||
       this.config.rpcUrl;
 
-    this.provider = new ethers.JsonRpcProvider(rpcUrl);
+    this.provider = new ethers.JsonRpcProvider(
+        rpcUrl,
+        {
+          name: this.network,
+          chainId: this.getChainId(),
+        },
+        {
+          staticNetwork: true,
+        },
+    );
     this.logger.log(`EVM Provider initialized: ${this.network} (${rpcUrl})`);
+  }
+
+  private getChainId(): number {
+    const map: Record<string, number> = {
+      ethereum: 1,
+      bnb: 56,
+      polygon: 137,
+    };
+
+    return map[this.network];
   }
 
   isEvmNetwork(): boolean {

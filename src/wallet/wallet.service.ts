@@ -238,7 +238,7 @@ export class WalletService {
     const chainId = chainIdMap[this.network];
 
     const response = await axios.get(
-        'https://api.etherscan.io/v2/api',
+        this.evm.config.explorerApiUrl,
         {
           timeout: 5000,
           params: {
@@ -328,17 +328,30 @@ export class WalletService {
   async getWatchedWallets(): Promise<WatchedWalletWithBalance[]> {
     const all = await this.redis.hgetall(CACHE_KEYS.watchlist);
 
+    if (!all || Object.keys(all).length === 0) {
+      return [];
+    }
+
+    const wallets = Object.values(all).map((value) =>
+        JSON.parse(value as string),
+    );
+
+    const balances = await Promise.all(
+        wallets.map((wallet) => this.getBalance(wallet.address)),
+    );
+
     const result: WatchedWalletWithBalance[] = [];
 
-    for (const value of Object.values(all)) {
-      const wallet = JSON.parse(value as string);
-
-      const balanceData = await this.getBalance(wallet.address);
+    for (let i = 0; i < wallets.length; i++) {
+      const wallet = wallets[i];
+      const balanceData = balances[i];
 
       const current = balanceData.balance;
-      const prev = await this.redis.get(CACHE_KEYS.lastBalance(wallet.address));
+      const prev = await this.redis.get(
+          CACHE_KEYS.lastBalance(wallet.address),
+      );
 
-      if (hasBalanceChanged(prev, current)) {
+      if (hasBalanceChanged(prev ?? '0', current)) {
         const event: WalletBalanceChangedEvent = {
           address: wallet.address,
           network: this.network,
@@ -349,12 +362,12 @@ export class WalletService {
         };
 
         this.events.emit(WALLET_BALANCE_CHANGED, event);
-
-        await this.redis.lpush(CACHE_KEYS.alerts, JSON.stringify(event));
-        await this.redis.ltrim(CACHE_KEYS.alerts, 0, 49);
       }
 
-      await this.redis.set(CACHE_KEYS.lastBalance(wallet.address), current);
+      await this.redis.set(
+          CACHE_KEYS.lastBalance(wallet.address),
+          current,
+      );
 
       result.push({
         ...wallet,
